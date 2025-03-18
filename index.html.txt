@@ -1,0 +1,126 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Table, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
+
+export default function PlayerQueue() {
+  const [queue, setQueue] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [player1, setPlayer1] = useState("");
+  const [player2, setPlayer2] = useState("");
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  useEffect(() => {
+    const storedQueue = JSON.parse(localStorage.getItem("queue")) || [];
+    const storedHistory = JSON.parse(localStorage.getItem("history")) || [];
+    const lastUpdated = localStorage.getItem("lastUpdated");
+    if (lastUpdated !== today) {
+      localStorage.setItem("queue", JSON.stringify([]));
+      localStorage.setItem("lastUpdated", today);
+    } else {
+      setQueue(storedQueue);
+    }
+    setHistory(storedHistory);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("queue", JSON.stringify(queue));
+  }, [queue]);
+
+  useEffect(() => {
+    localStorage.setItem("history", JSON.stringify(history));
+  }, [history]);
+
+  const addPlayer = () => {
+    if (!player1 || !player2) return;
+    const newPlayer = {
+      id: queue.length + 1,
+      player1,
+      player2,
+      timeIn: format(new Date(), "HH:mm:ss"),
+      date: today,
+      done: false,
+    };
+    setQueue([...queue, newPlayer]);
+    setPlayer1("");
+    setPlayer2("");
+  };
+
+  const markAsDone = (id) => {
+    const updatedQueue = queue.filter((player) => player.id !== id);
+    const completedPlayer = queue.find((player) => player.id === id);
+    setQueue(updatedQueue);
+    setHistory([...history, { ...completedPlayer, done: true }]);
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
+      <h1 className="text-xl font-bold">Player Queue System</h1>
+      <div className="flex space-x-2">
+        <Input placeholder="Player 1 Name" value={player1} onChange={(e) => setPlayer1(e.target.value)} />
+        <Input placeholder="Player 2 Name" value={player2} onChange={(e) => setPlayer2(e.target.value)} />
+        <Button onClick={addPlayer}>Add Player</Button>
+      </div>
+
+      <Card>
+        <CardContent>
+          <h2 className="font-semibold">Today's Queue</h2>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Player 1</TableCell>
+                <TableCell>Player 2</TableCell>
+                <TableCell>Time In</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {queue.map((player) => (
+                <TableRow key={player.id}>
+                  <TableCell>{player.id}</TableCell>
+                  <TableCell>{player.player1}</TableCell>
+                  <TableCell>{player.player2}</TableCell>
+                  <TableCell>{player.timeIn}</TableCell>
+                  <TableCell>
+                    <Button onClick={() => markAsDone(player.id)}>Done</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <h2 className="font-semibold">History</h2>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ID</TableCell>
+                <TableCell>Player 1</TableCell>
+                <TableCell>Player 2</TableCell>
+                <TableCell>Time In</TableCell>
+                <TableCell>Date</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {history.map((player, index) => (
+                <TableRow key={index}>
+                  <TableCell>{player.id}</TableCell>
+                  <TableCell>{player.player1}</TableCell>
+                  <TableCell>{player.player2}</TableCell>
+                  <TableCell>{player.timeIn}</TableCell>
+                  <TableCell>{player.date}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
